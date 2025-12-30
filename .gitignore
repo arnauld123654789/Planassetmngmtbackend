@@ -1,0 +1,6 @@
+/.env
+/.env.example
+/initial_data.py
+/postman_collection.json
+/venv
+/__pycache__
