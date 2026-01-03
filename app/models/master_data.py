@@ -34,3 +34,8 @@ class Vendor(CamelModel, table=True):
     vendor_id: str = Field(primary_key=True, alias="vendorId")
     vendor_name: str = Field(alias="vendorName")
     vendor_account: str = Field(alias="vendorAccount")
+
+class FundingSource(CamelModel, table=True):
+    funding_source_id: str = Field(primary_key=True, alias="fundingSourceId")
+    name: str
+    description: Optional[str] = None

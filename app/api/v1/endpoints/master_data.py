@@ -4,15 +4,16 @@ from sqlmodel import select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import SessionDep, CurrentUser
-from app.models.master_data import AssetCategory, AssetSubCategory, Location, Project, Vendor, LegalEntity
 from app.schemas.master_data import (
     AssetCategoryCreate, AssetCategoryUpdate,
     AssetSubCategoryCreate, AssetSubCategoryUpdate,
     LocationCreate, LocationUpdate,
     ProjectCreate, ProjectUpdate,
     VendorCreate, VendorUpdate,
-    LegalEntityCreate, LegalEntityUpdate
+    LegalEntityCreate, LegalEntityUpdate,
+    FundingSourceCreate, FundingSourceUpdate
 )
+from app.models.master_data import AssetCategory, AssetSubCategory, Location, Project, Vendor, LegalEntity, FundingSource
 
 router = APIRouter()
 
@@ -347,3 +348,58 @@ def delete_legal_entity(
     session.delete(legal_entity)
     session.commit()
     return legal_entity
+
+# Funding Sources
+@router.get("/funding-sources", response_model=List[FundingSource])
+def read_funding_sources(session: SessionDep, current_user: CurrentUser) -> Any:
+    return session.exec(select(FundingSource)).all()
+
+@router.post("/funding-sources", response_model=FundingSource)
+def create_funding_source(
+    *,
+    session: SessionDep,
+    funding_source_in: FundingSourceCreate,
+    current_user: CurrentUser,
+) -> Any:
+    import uuid
+    funding_source = FundingSource.model_validate(
+        funding_source_in, update={"funding_source_id": str(uuid.uuid4())}
+    )
+    session.add(funding_source)
+    session.commit()
+    session.refresh(funding_source)
+    return funding_source
+
+@router.put("/funding-sources/{funding_source_id}", response_model=FundingSource)
+def update_funding_source(
+    *,
+    session: SessionDep,
+    funding_source_id: str,
+    funding_source_in: FundingSourceUpdate,
+    current_user: CurrentUser,
+) -> Any:
+    funding_source = session.get(FundingSource, funding_source_id)
+    if not funding_source:
+        raise HTTPException(status_code=404, detail="Funding Source not found")
+    
+    update_data = funding_source_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(funding_source, key, value)
+        
+    session.add(funding_source)
+    session.commit()
+    session.refresh(funding_source)
+    return funding_source
+
+@router.delete("/funding-sources/{funding_source_id}", response_model=FundingSource)
+def delete_funding_source(
+    session: SessionDep,
+    funding_source_id: str,
+    current_user: CurrentUser,
+) -> Any:
+    funding_source = session.get(FundingSource, funding_source_id)
+    if not funding_source:
+        raise HTTPException(status_code=404, detail="Funding Source not found")
+    session.delete(funding_source)
+    session.commit()
+    return funding_source

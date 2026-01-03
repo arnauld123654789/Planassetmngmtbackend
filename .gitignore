@@ -1,6 +1,7 @@
-/.env
+/uploads
 /.env.example
 /initial_data.py
-/postman_collection.json
 /venv
-/__pycache__
+__pycache__/
+.env
+**server**

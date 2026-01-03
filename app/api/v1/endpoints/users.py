@@ -38,7 +38,6 @@ def create_user(
     *,
     session: SessionDep,
     user_in: UserCreate,
-    current_user: CurrentUser,
 ) -> Any:
     # Check if user with this email already exists
     user = session.exec(select(User).where(User.email == user_in.email)).first()

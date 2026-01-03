@@ -76,3 +76,14 @@ class LegalEntityCreate(LegalEntityBase):
 
 class LegalEntityUpdate(LegalEntityBase):
     pass
+
+# Funding Source
+class FundingSourceBase(CamelModel):
+    name: str = None
+    description: Optional[str] = None
+
+class FundingSourceCreate(FundingSourceBase):
+    name: str
+
+class FundingSourceUpdate(FundingSourceBase):
+    pass

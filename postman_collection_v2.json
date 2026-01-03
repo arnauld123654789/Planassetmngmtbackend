@@ -1,0 +1,627 @@
+{
+    "info": {
+        "name": "Asset Management System - Final API v3",
+        "description": "Comprehensive collection covering Auth, Users, Assets, Master Data (Full CRUD), and Verifications (Sessions & Scans).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.access_token) {",
+                                    "    pm.collectionVariables.set(\"token\", jsonData.access_token);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "admin@example.com",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "password",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Users",
+            "item": [
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Users",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/?skip=0&limit=100",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "skip",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "100"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create User (Public)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"full_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secret123\",\n  \"role\": \"IT Admin\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Assets",
+            "item": [
+                {
+                    "name": "List Assets",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/?skip=0&limit=100",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "skip",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "100"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Asset (Unified)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "asset_data",
+                                    "value": "{\n  \"assetName\": \"Dell Latitude Laptop\",\n  \"physicalAssetTagNumber\": \"TAG-003\",\n  \"brand\": \"Dell\",\n  \"model\": \"Latitude 5420\",\n  \"acquisitionPrice\": 1200.50,\n  \"currency\": \"USD\",\n  \"dateOfAcquisition\": \"2023-10-01\",\n  \"typeOfAcquisition\": \"purchase\",\n  \"assetStatus\": \"GOOD\",\n  \"SCOMCategory\": \"IT Equipment\",\n  \"usefulLifeYears\": 5,\n  \"legalEntityId\": \"uuid-legal-entity\",\n  \"businessUnit\": \"IT Services\",\n  \"projectId\": \"uuid-project\",\n  \"fundingSourceId\": \"uuid-funding-source\",\n  \"locationId\": \"uuid-location\",\n  \"custodianId\": \"uuid-user\",\n  \"subCategoryId\": \"uuid-sub-category\"\n}",
+                                    "description": "Notice: categoryId is no longer required.",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "files",
+                                    "description": "Optional photos",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Asset by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/assets/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "assets",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "SCOM-ID-HERE"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Master Data",
+            "item": [
+                {
+                    "name": "Legal Entities",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/legal-entities"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"legalEntityCode\": \"LE-001\", \"legalEntityName\": \"Main Org\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/legal-entities"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Asset Categories",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/categories"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"name\": \"IT\", \"description\": \"IT Assets\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/categories"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Asset Sub-Categories",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/sub-categories"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"name\": \"Laptops\", \"categoryId\": \"uuid\", \"usefulLifeYears\": 5}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/sub-categories"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Locations",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/locations"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"locationCode\": \"L01\", \"locationName\": \"HQ\", \"siteName\": \"Yaounde\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/locations"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Projects",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/projects"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"projectCode\": \"P01\", \"name\": \"Project One\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/projects"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Vendors",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/vendors"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"vendorName\": \"Dell\", \"vendorAccount\": \"V-001\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/vendors"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Funding Sources",
+                    "item": [
+                        {
+                            "name": "List",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/master-data/funding-sources"
+                            }
+                        },
+                        {
+                            "name": "Create",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"name\": \"UN\", \"description\": \"United Nations\"}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/master-data/funding-sources"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Verifications",
+            "item": [
+                {
+                    "name": "Sessions",
+                    "item": [
+                        {
+                            "name": "Create Session",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"Annual Audit 2024\",\n  \"description\": \"Physical asset verification for Q1\",\n  \"startDate\": \"2024-01-01\",\n  \"endDate\": \"2024-03-31\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/verifications/sessions"
+                            }
+                        },
+                        {
+                            "name": "List Sessions",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/verifications/sessions"
+                            }
+                        },
+                        {
+                            "name": "Update Status",
+                            "request": {
+                                "method": "PATCH",
+                                "url": {
+                                    "raw": "{{baseUrl}}/verifications/sessions/:id/status?status=OPEN",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "verifications",
+                                        "sessions",
+                                        ":id",
+                                        "status"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "status",
+                                            "value": "OPEN"
+                                        }
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "1"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Assign Verificators",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"userIds\": [\"uuid-verificator-1\", \"uuid-verificator-2\"]\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/verifications/sessions/:id/verificators",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "verifications",
+                                    "sessions",
+                                    ":id",
+                                    "verificators"
+                                ],
+                                "variable": [
+                                    {
+                                        "key": "id",
+                                        "value": "1"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Scans & Reports",
+                    "item": [
+                        {
+                            "name": "Record Verification (Scan)",
+                            "request": {
+                                "method": "POST",
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"sessionId\": 1,\n  \"statusAtVerification\": \"GOOD\",\n  \"notes\": \"Asset found in original location.\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": "{{baseUrl}}/verifications/verify/:asset_id",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "verifications",
+                                    "verify",
+                                    ":asset_id"
+                                ],
+                                "variable": [
+                                    {
+                                        "key": "asset_id",
+                                        "value": "SCOM-ID-HERE"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "Get Session Report",
+                            "request": {
+                                "method": "GET",
+                                "url": "{{baseUrl}}/verifications/sessions/:id/report",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "verifications",
+                                    "sessions",
+                                    ":id",
+                                    "report"
+                                ],
+                                "variable": [
+                                    {
+                                        "key": "id",
+                                        "value": "1"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "List All Scans",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{baseUrl}}/verifications/verifications?asset_id=SCOM-ID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "verifications",
+                                        "verifications"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "asset_id",
+                                            "value": "SCOM-ID"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

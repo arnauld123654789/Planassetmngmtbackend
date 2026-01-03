@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str
@@ -10,17 +10,23 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     
     DATABASE_URL: str
+    UPLOAD_DIR: str = "uploads/assets"
     
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = []
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, (list, str)):
             return v
-        raise ValueError(v)
+        return v
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
+    model_config = SettingsConfigDict(
+        case_sensitive=True, 
+        env_file=".env",
+        extra="ignore"
+    )
 
 settings = Settings()

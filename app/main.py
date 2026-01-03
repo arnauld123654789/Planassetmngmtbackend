@@ -22,6 +22,12 @@ if settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+from fastapi.staticfiles import StaticFiles
+import os
+if not os.path.exists(settings.UPLOAD_DIR):
+    os.makedirs(settings.UPLOAD_DIR)
+app.mount("/static", StaticFiles(directory=settings.UPLOAD_DIR), name="static")
+
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
