@@ -66,3 +66,34 @@ class TransferRead(TransferBase):
     initiated_by: str = Field(alias="initiatedBy")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+# --- Maintenance ---
+
+class MaintenanceBase(BaseModel):
+    asset_id: str = Field(alias="assetId", validation_alias=AliasChoices("assetId", "asset_id"))
+    date_of_maintenance: str = Field(alias="date")  # YYYY-MM-DD format
+    type: str  # "Preventive", "Corrective", "Upgrade"
+    provider: str
+    cost: float
+    notes: Optional[str] = None
+
+class MaintenanceCreate(MaintenanceBase):
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class MaintenanceRead(BaseModel):
+    maintenance_id: str = Field(alias="maintenanceId")
+    asset_id: str = Field(alias="assetId")
+    date_of_maintenance: date = Field(alias="date")  # date object for output
+    type: str
+    provider: str
+    cost: float
+    notes: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+class MaintenanceUpdate(BaseModel):
+    notes: Optional[str] = None
+    cost: Optional[float] = None
+    
+    model_config = ConfigDict(populate_by_name=True)

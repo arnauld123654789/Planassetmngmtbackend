@@ -299,6 +299,10 @@ def delete_vendor(
     return vendor
 
 # Legal Entities
+@router.get("/legal-entities", response_model=List[LegalEntity])
+def read_legal_entities(session: SessionDep, current_user: CurrentUser) -> Any:
+    return session.exec(select(LegalEntity)).all()
+
 @router.post("/legal-entities", response_model=LegalEntity)
 def create_legal_entity(
     *,

@@ -100,7 +100,7 @@ def create_asset(
         
     return asset
 
-@router.put("/{asset_id}", response_model=Asset)
+@router.patch("/{asset_id}", response_model=Asset)
 def update_asset(
     *,
     session: SessionDep,

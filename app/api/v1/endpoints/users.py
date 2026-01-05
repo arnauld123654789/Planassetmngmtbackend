@@ -60,6 +60,21 @@ def create_user(
     session.refresh(user)
     return user
 
+@router.get("/{user_id}", response_model=User)
+def read_user_by_id(
+    user_id: str,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get a specific user by ID.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.patch("/{user_id}", response_model=User)
 @router.put("/{user_id}", response_model=User)
 def update_user(
     *,
@@ -72,11 +87,30 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
+    # Permission check: Only IT Admin or the user themselves can update
+    # Note: Enums imports might be needed, using string literal for safety if import unavailable, or assuming imported
+    from app.models.enums import UserRole
+    is_admin = current_user.role == UserRole.IT_ADMIN
+    is_self = current_user.user_id == user.user_id
+    
+    if not is_admin and not is_self:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+        
     update_data = user_in.model_dump(exclude_unset=True)
+    
+    # Prevent non-admin from changing roles
+    if "role" in update_data and not is_admin:
+        raise HTTPException(status_code=403, detail="Only IT Admin can assign roles")
+        
+    # Handling password
     if "password" in update_data and update_data["password"]:
         hashed_password = security.get_password_hash(update_data["password"])
         del update_data["password"]
         update_data["hashed_password"] = hashed_password
+
+    # Sync roles list if role is updated
+    if "role" in update_data:
+        update_data["roles"] = [update_data["role"]]
 
     for key, value in update_data.items():
         setattr(user, key, value)
@@ -92,9 +126,28 @@ def delete_user(
     user_id: str,
     current_user: CurrentUser,
 ) -> Any:
+    from app.models.enums import UserRole
+    
+    # Permission: Only IT Admin
+    if current_user.role != UserRole.IT_ADMIN:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+        
+    # Prevent self-deletion
+    if user.user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+        
+    # Intelligent check: Does user have assets assigned?
+    from app.models.asset import Asset
+    assigned_assets = session.exec(select(Asset).where(Asset.custodian_id == user_id)).first()
+    if assigned_assets:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete user: This user is the custodian of one or more assets. Please reassign assets first."
+        )
     
     session.delete(user)
     session.commit()

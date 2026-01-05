@@ -33,3 +33,4 @@ class Maintenance(CamelModel, table=True):
     type: str # "Preventive" etc
     provider: str
     cost: float
+    notes: Optional[str] = None

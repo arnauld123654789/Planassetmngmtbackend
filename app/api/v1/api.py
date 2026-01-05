@@ -12,3 +12,7 @@ from app.api.v1.endpoints import verifications
 api_router.include_router(verifications.router, prefix="/verifications", tags=["verifications"])
 from app.api.v1.endpoints import operations
 api_router.include_router(operations.router, prefix="/operations", tags=["operations"])
+from app.api.v1.endpoints import maintenance
+api_router.include_router(maintenance.router, prefix="/operations/maintenance", tags=["maintenance"])
+from app.api.v1.endpoints import reports
+api_router.include_router(reports.router, prefix="/reports", tags=["reports"])

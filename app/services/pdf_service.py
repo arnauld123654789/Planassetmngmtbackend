@@ -13,10 +13,11 @@ class PDFService:
     def generate_transfer_pdf(transfer: Transfer, asset: Asset, initiator_name: str, 
                               from_name: str, to_name: str, from_loc: str, to_loc: str) -> str:
         
-        filename = f"transfer_{transfer.transfer_id}.pdf"
-        output_dir = os.path.join(settings.UPLOAD_DIR, "transfers")
-        os.makedirs(output_dir, exist_ok=True)
-        file_path = os.path.join(output_dir, filename)
+        import tempfile
+        # Use temp file - not stored permanently
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix="transfer_")
+        file_path = temp_file.name
+        temp_file.close()
         
         c = canvas.Canvas(file_path, pagesize=A4)
         width, height = A4
@@ -174,10 +175,11 @@ class PDFService:
         """
         from datetime import datetime
         
-        filename = f"asset_holder_form_{user_id}.pdf"
-        output_dir = os.path.join(settings.UPLOAD_DIR, "transfers")
-        os.makedirs(output_dir, exist_ok=True)
-        file_path = os.path.join(output_dir, filename)
+        import tempfile
+        # Use temp file - not stored permanently
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix="asset_holder_")
+        file_path = temp_file.name
+        temp_file.close()
         
         c = canvas.Canvas(file_path, pagesize=A4)
         width, height = A4
@@ -236,38 +238,106 @@ class PDFService:
         c.setFillColor(colors.black)
         y -= 1.2*cm
         
-        # Table column headers
-        c.setFont("Helvetica-Bold", 9)
-        col_x = [left_margin + 0.3*cm, left_margin + 5*cm, left_margin + 10*cm, left_margin + 13*cm]
-        c.drawString(col_x[0], y, "Asset ID")
-        c.drawString(col_x[1], y, "Description")
-        c.drawString(col_x[2], y, "Tag Number")
-        c.drawString(col_x[3], y, "Status")
-        y -= 0.5*cm
+        # Use ReportLab Table with Paragraphs for proper text wrapping
+        from reportlab.platypus import Table, TableStyle, Paragraph
+        from reportlab.lib import colors as rl_colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.enums import TA_LEFT
         
-        # Draw line under headers
-        c.setStrokeColor(colors.black)
-        c.setLineWidth(1)
-        c.line(left_margin, y, left_margin + content_width, y)
-        y -= 0.4*cm
+        # Create paragraph styles
+        styles = getSampleStyleSheet()
+        header_style = ParagraphStyle(
+            'CustomHeader',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            textColor=darker_blue,
+            alignment=TA_LEFT
+        )
         
-        # Assets data
-        c.setFont("Helvetica", 8)
+        cell_style = ParagraphStyle(
+            'CustomCell',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=9,
+            alignment=TA_LEFT,
+            leading=11  # Line spacing
+        )
+        
+        # Prepare table data with Paragraph objects for wrapping
+        table_data = [
+            [
+                Paragraph('Asset ID', header_style),
+                Paragraph('Description', header_style),
+                Paragraph('Tag Number', header_style),
+                Paragraph('Status', header_style)
+            ]
+        ]
+        
         for asset in assets:
-            if y < 4*cm:  # Check if we need a new page
-                c.showPage()
-                # Redraw border on new page
-                c.setStrokeColor(darker_blue)
-                c.setLineWidth(2)
-                c.rect(1.5*cm, 1.5*cm, width-3*cm, height-3*cm)
-                y = height - 2*cm
+            # Clean status value
+            status = str(asset.asset_status).replace("AssetStatus.", "")
             
-            c.drawString(col_x[0], y, str(asset.scom_asset_id)[:20])
-            desc = f"{asset.asset_name} ({asset.brand})"[:30]
-            c.drawString(col_x[1], y, desc)
-            c.drawString(col_x[2], y, str(asset.physical_asset_tag_number or "N/A")[:15])
-            c.drawString(col_x[3], y, str(asset.asset_status)[:15])
-            y -= 0.5*cm
+            # Use Paragraph for each cell to enable wrapping
+            table_data.append([
+                Paragraph(str(asset.scom_asset_id), cell_style),
+                Paragraph(f"{asset.asset_name}<br/>({asset.brand} {asset.model})", cell_style),
+                Paragraph(str(asset.physical_asset_tag_number or "N/A"), cell_style),
+                Paragraph(status, cell_style)
+            ])
+        
+        # Define column widths - adjusted for better balance
+        # Asset ID: 4.5cm, Description: 6.5cm, Tag: 2.5cm, Status: 2cm
+        col_widths = [4.5*cm, 6.5*cm, 2.5*cm, 2*cm]
+        
+        # Create table with automatic row height calculation
+        table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        
+        # Apply table style
+        table.setStyle(TableStyle([
+            # Header row styling
+            ('BACKGROUND', (0, 0), (-1, 0), sky_blue),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 0), (-1, 0), 10),
+            
+            # Data rows styling
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            
+            # Grid lines - all cells have borders
+            ('GRID', (0, 0), (-1, -1), 0.75, rl_colors.black),
+            ('LINEBELOW', (0, 0), (-1, 0), 2, darker_blue),
+            
+            # Alternating row colors for readability
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [rl_colors.white, rl_colors.Color(0.96, 0.96, 0.96)]),
+        ]))
+        
+        # Calculate table dimensions
+        table_width, table_height = table.wrap(content_width, height)
+        
+        # Check if table fits on current page
+        available_height = y - 6*cm  # Leave room for signature section
+        
+        if table_height > available_height:
+            # Start new page for table
+            c.showPage()
+            # Redraw border on new page
+            c.setStrokeColor(darker_blue)
+            c.setLineWidth(2)
+            c.rect(1.5*cm, 1.5*cm, width-3*cm, height-3*cm)
+            y = height - 2*cm
+        
+        # Draw the table
+        table.drawOn(c, left_margin, y - table_height)
+        y = y - table_height - 1*cm
         
         # Signature section at bottom
         signature_y = 3 * cm
