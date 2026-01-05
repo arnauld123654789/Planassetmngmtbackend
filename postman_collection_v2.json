@@ -776,6 +776,62 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Get Good Issue Note PDF",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/transfers/:transfer_id/good-issue-note",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "transfers",
+                                ":transfer_id",
+                                "good-issue-note"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "transfer_id",
+                                    "value": "",
+                                    "description": "ID of approved transfer"
+                                }
+                            ]
+                        },
+                        "description": "Download Good Issue Note PDF for an approved transfer. Returns PDF file."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Asset Holder Form PDF",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/users/:user_id/asset-holder-form",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "users",
+                                ":user_id",
+                                "asset-holder-form"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "user_id",
+                                    "value": "",
+                                    "description": "User UUID"
+                                }
+                            ]
+                        },
+                        "description": "Download Asset Holder Form PDF listing all assets assigned to a user. Returns PDF file."
+                    },
+                    "response": []
                 }
             ]
         }
