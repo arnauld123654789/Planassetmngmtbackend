@@ -6,12 +6,13 @@ from app.models.enums import TransferStatus, DisposalType, DisposalStatus
 
 class Transfer(CamelModel, table=True):
     transfer_id: str = Field(primary_key=True, alias="transferId")
+    asset_id: str = Field(foreign_key="asset.scom_asset_id", alias="assetId")
     status: TransferStatus
     requested_at: datetime = Field(alias="requestedAt")
-    from_user_id: str = Field(foreign_key="user.user_id", alias="fromUserId")
-    to_user_id: str = Field(foreign_key="user.user_id", alias="toUserId")
-    from_location_id: str = Field(foreign_key="location.location_id", alias="fromLocationId")
-    to_location_id: str = Field(foreign_key="location.location_id", alias="toLocationId")
+    from_user_id: Optional[str] = Field(default=None, foreign_key="user.user_id", alias="fromUserId")
+    to_user_id: Optional[str] = Field(default=None, foreign_key="user.user_id", alias="toUserId")
+    from_location_id: Optional[str] = Field(default=None, foreign_key="location.location_id", alias="fromLocationId")
+    to_location_id: Optional[str] = Field(default=None, foreign_key="location.location_id", alias="toLocationId")
     reason: str
     initiated_by: str = Field(foreign_key="user.user_id", alias="initiatedBy")
 
@@ -23,6 +24,7 @@ class Disposal(CamelModel, table=True):
     requested_by: str = Field(foreign_key="user.user_id", alias="requestedBy")
     requested_at: datetime = Field(alias="requestedAt")
     status: DisposalStatus
+    document_path: str = Field(alias="documentPath")
 
 class Maintenance(CamelModel, table=True):
     maintenance_id: str = Field(primary_key=True, alias="maintenanceId")

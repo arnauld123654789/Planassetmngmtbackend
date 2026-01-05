@@ -10,3 +10,5 @@ from app.api.v1.endpoints import asset_photos
 api_router.include_router(asset_photos.router, prefix="/assets", tags=["asset-photos"])
 from app.api.v1.endpoints import verifications
 api_router.include_router(verifications.router, prefix="/verifications", tags=["verifications"])
+from app.api.v1.endpoints import operations
+api_router.include_router(operations.router, prefix="/operations", tags=["operations"])

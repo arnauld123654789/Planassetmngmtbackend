@@ -600,6 +600,184 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "Operations",
+            "item": [
+                {
+                    "name": "Create Disposal",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "disposal_data",
+                                    "value": "{\"reason\": \"Broken\", \"typeOfDisposal\": \"DESTROYED\", \"assetIds\": [\"ASSET-123\", \"ASSET-456\"]}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/disposals/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "disposals",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Disposals",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/disposals/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "disposals",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Disposal",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"APPROVED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/disposals/:disposal_id/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "disposals",
+                                ":disposal_id",
+                                "status"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "disposal_id",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Transfer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reason\": \"Relocation\",\n    \"toUserId\": \"USER-456\",\n    \"toLocationId\": \"LOC-789\",\n    \"fromUserId\": \"USER-123\",\n    \"fromLocationId\": \"LOC-123\",\n    \"assetIds\": [\"ASSET-101\", \"ASSET-102\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/transfers/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "transfers",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Transfers",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/transfers/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "transfers",
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Transfer",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"APPROVED\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/operations/transfers/:transfer_id/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "operations",
+                                "transfers",
+                                ":transfer_id",
+                                "status"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "transfer_id",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "auth": {
