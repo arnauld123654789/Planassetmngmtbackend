@@ -88,9 +88,8 @@ def update_user(
         raise HTTPException(status_code=404, detail="User not found")
         
     # Permission check: Only IT Admin or the user themselves can update
-    # Note: Enums imports might be needed, using string literal for safety if import unavailable, or assuming imported
     from app.models.enums import UserRole
-    is_admin = current_user.role == UserRole.IT_ADMIN
+    is_admin = UserRole.IT_ADMIN.value in current_user.roles
     is_self = current_user.user_id == user.user_id
     
     if not is_admin and not is_self:
@@ -129,7 +128,7 @@ def delete_user(
     from app.models.enums import UserRole
     
     # Permission: Only IT Admin
-    if current_user.role != UserRole.IT_ADMIN:
+    if UserRole.IT_ADMIN.value not in current_user.roles:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     user = session.get(User, user_id)
