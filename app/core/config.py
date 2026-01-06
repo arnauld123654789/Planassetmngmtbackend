@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     UPLOAD_DIR: str = "uploads/assets"
     
-    BACKEND_CORS_ORIGINS: Union[List[str], str] = []
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
