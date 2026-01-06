@@ -26,6 +26,7 @@ class AssetUpdate(AssetBase):
     location_id: Optional[str] = Field(default=None, alias="locationId")
     custodian_id: Optional[str] = Field(default=None, alias="custodianId")
     sub_category_id: Optional[str] = Field(default=None, alias="subCategoryId")
+    category_id: Optional[str] = Field(default=None, alias="categoryId")
     
     # Optional in Base too, but redeclaring for completeness/clarity
     vendor_name: Optional[str] = Field(default=None, alias="vendorName")
@@ -33,3 +34,9 @@ class AssetUpdate(AssetBase):
     purchase_order_number: Optional[str] = Field(default=None, alias="purchaseOrderNumber")
     rent_price: Optional[float] = Field(default=None, alias="rentPrice")
     vin_number: Optional[str] = Field(default=None, alias="VINNumber")
+
+class AssetRead(AssetBase):
+    scom_asset_id: str = Field(alias="SCOMAssetID")
+    photo_count: int = 0
+    profile_photo_url: Optional[str] = None
+    profile_photo_thumb_url: Optional[str] = None

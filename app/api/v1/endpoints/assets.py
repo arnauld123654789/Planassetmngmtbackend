@@ -1,26 +1,49 @@
 from typing import Any, List
 from fastapi import APIRouter, HTTPException, Form, File, UploadFile
 from sqlmodel import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 import logging
 import json
 
 from app.api.deps import SessionDep, CurrentUser
 from app.models.asset import Asset
-from app.schemas.asset import AssetCreate, AssetUpdate
+from app.schemas.asset import AssetCreate, AssetUpdate, AssetRead
 from app.services.asset_service import AssetService
 from app.services.photo_service import PhotoService
+from app.models.master_data import AssetSubCategory
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Asset])
+@router.get("/", response_model=List[AssetRead])
 def read_assets(
     session: SessionDep,
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    return session.exec(select(Asset).offset(skip).limit(limit)).all()
+    assets = session.exec(select(Asset).options(selectinload(Asset.photos)).offset(skip).limit(limit)).all()
+    
+    results = []
+    for asset in assets:
+        # Create AssetRead from asset data
+        asset_read = AssetRead.model_validate(asset)
+        
+        # Populate photo info
+        asset_read.photo_count = len(asset.photos)
+        
+        if asset.photos:
+            # Try to find profile photo, otherwise use the first one
+            profile_photo = next((p for p in asset.photos if p.is_profile), asset.photos[0])
+            
+            # Construct URL - assuming /static/ mount
+            # Note: In a real app, might want to store full URL or have a helper
+            asset_read.profile_photo_url = f"/static/{profile_photo.filename}"
+            asset_read.profile_photo_thumb_url = f"/static/{profile_photo.filename}" # Using same for now as requested
+            
+        results.append(asset_read)
+        
+    return results
 
 @router.get("/{asset_id}", response_model=Asset)
 def read_asset(
@@ -58,6 +81,15 @@ def create_asset(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+    # 2.5. Infer category_id from sub_category_id if not provided
+    if not asset_in.category_id and asset_in.sub_category_id:
+        sub_cat = session.get(AssetSubCategory, asset_in.sub_category_id)
+        if sub_cat:
+            asset_in.category_id = sub_cat.category_id
+        else:
+            # Optional: fail if sub_category is invalid, or let FK constraint handle it
+            pass
     
     # 3. Create the Asset with automated verification tracking
     from datetime import date

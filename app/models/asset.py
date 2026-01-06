@@ -32,6 +32,7 @@ class AssetBase(CamelModel):
     location_id: str = Field(foreign_key="location.location_id", alias="locationId")
     custodian_id: str = Field(foreign_key="user.user_id", alias="custodianId")
     sub_category_id: str = Field(foreign_key="assetsubcategory.sub_category_id", alias="subCategoryId")
+    category_id: Optional[str] = Field(default=None, foreign_key="assetcategory.category_id", alias="categoryId")
     
     vin_number: Optional[str] = Field(default=None, alias="VINNumber")
     
