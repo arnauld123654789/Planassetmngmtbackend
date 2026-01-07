@@ -12,11 +12,23 @@ class ReportService:
     
     # === DASHBOARD ===
     @staticmethod
-    def get_dashboard_metrics(session: Session, role: str) -> Dict[str, Any]:
+    def get_dashboard_metrics(session: Session, roles: List[str]) -> Dict[str, Any]:
         """Role-specific dashboard metrics"""
         metrics = {}
         
-        if role in ["Supply Chain Manager", "IT Admin"]:
+        # Check privileges based on presence of roles in the list
+        is_scm = any("Supply Chain Manager" in r for r in roles) if roles else False
+        is_admin = any("IT Admin" in r for r in roles) if roles else False
+        
+        # Simple check: If exact match logic is preferred:
+        # is_scm = "Supply Chain Manager" in roles
+        # is_admin = "IT Admin" in roles
+        # Use loose check to handle potential string variations if needed, but strict list check is safer if Enum used consistently.
+        # Given "Array(4) ['IT Admin', ...]" log, strict check is likely fine, but let's be robust.
+        
+        has_manager_access = is_scm or is_admin
+        
+        if has_manager_access:
             # Total assets
             total_assets = session.exec(select(func.count(Asset.scom_asset_id))).one()
             metrics["total_assets"] = total_assets
@@ -34,7 +46,7 @@ class ReportService:
             ).one()
             metrics["verifications_last_week"] = recent_verifications
             
-        if role == "IT Admin":
+        if is_admin:
             # Maintenance due
             maintenance_count = session.exec(select(func.count(Maintenance.maintenance_id))).one()
             metrics["total_maintenance_records"] = maintenance_count

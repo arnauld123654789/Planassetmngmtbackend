@@ -52,7 +52,14 @@ def create_user(
     user_data = user_in.model_dump()
     user_data["hashed_password"] = security.get_password_hash(user_in.password)
     user_data["user_id"] = str(uuid.uuid4())
-    user_data["roles"] = [user_in.role] # Sync single role to roles list
+    
+    # Intelligent role handling:
+    # If explicit roles list is provided and not empty, use it.
+    # Otherwise, fallback to the single 'role' field wrapped in a list.
+    if user_in.roles:
+        user_data["roles"] = user_in.roles
+    else:
+        user_data["roles"] = [user_in.role]
     
     user = User.model_validate(user_data)
     session.add(user)
@@ -110,8 +117,9 @@ def update_user(
         del update_data["password"]
         update_data["hashed_password"] = hashed_password
 
-    # Sync roles list if role is updated
-    if "role" in update_data:
+    # Sync roles list if role is updated, BUT only if 'roles' is not also being updated
+    # This prevents overwriting a detailed roles list with a single role string
+    if "role" in update_data and "roles" not in update_data:
         update_data["roles"] = [update_data["role"]]
 
     for key, value in update_data.items():

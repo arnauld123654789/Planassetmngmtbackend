@@ -71,9 +71,15 @@ class OperationService:
         session.refresh(disposal)
         return disposal
 
-    @staticmethod
-    def create_transfer(session: Session, transfer_in: TransferCreate, user_role: str, user_id: str) -> List[Transfer]:
-        if user_role != UserRole.LOGISTICIAN:
+    def create_transfer(session: Session, transfer_in: TransferCreate, user_roles: List[str], user_id: str) -> List[Transfer]:
+        # Check if user has Logistician role (or IT Admin who can do everything? - user requirement imply cumulate privileges)
+        # But strictly, requirement says "Only Logisticians can initiate" in docstring. 
+        # However "cumulate privileges" means if I am Logistician AND Manager, I can initiate.
+        
+        # Check if 'Logistician' is in the list of roles
+        is_logistician = any(UserRole.LOGISTICIAN.value == role or UserRole.LOGISTICIAN.value in str(role) for role in user_roles)
+        
+        if not is_logistician:
             raise HTTPException(status_code=403, detail="Only Logisticians can initiate transfers")
             
         created_transfers = []
@@ -99,8 +105,15 @@ class OperationService:
         return created_transfers
 
     @staticmethod
-    def approve_transfer(session: Session, transfer_id: str, approved: bool, user_role: str):
-        if user_role not in [UserRole.SUPPLY_CHAIN_MANAGER, UserRole.IT_ADMIN]:
+    def approve_transfer(session: Session, transfer_id: str, approved: bool, user_roles: List[str], approver_name: str):
+        # Check if user has SCM or IT Admin role
+        can_approve = any(
+            role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value] or 
+            any(allowed in str(role) for allowed in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value])
+            for role in user_roles
+        )
+
+        if not can_approve:
              raise HTTPException(status_code=403, detail="Only Supply Chain Managers or IT Admins can approve transfers")
 
         transfer = session.get(Transfer, transfer_id)
@@ -140,13 +153,30 @@ class OperationService:
                      to_loc = l2.location_name if l2 else "Unknown Loc"
 
                 if asset:
+                    # Use current time as approval date
+                    approval_date = datetime.now()
+                    
+                    # === UPDATE ASSET LOCATION/CUSTODIAN ===
+                    if transfer.to_user_id:
+                        asset.custodian_id = transfer.to_user_id
+                    if transfer.to_location_id:
+                        asset.location_id = transfer.to_location_id
+                    
+                    session.add(asset) # Stage asset update
+                    
                     pdf_path = PDFService.generate_transfer_pdf(
                         transfer, asset, initiator_name, 
-                        from_name, to_name, from_loc, to_loc
+                        from_name, to_name, from_loc, to_loc,
+                        approver_name, approval_date
                     )
                     print(f"Transfer PDF generated at: {pdf_path}")
             except Exception as e:
-                print(f"Error generating PDF for transfer {transfer_id}: {e}")
+                print(f"Error updating asset or generating PDF for transfer {transfer_id}: {e}")
+                # Note: We continue to commit the transfer status update even if PDF generation fails,
+                # but because we added asset to session, it will also be committed below.
+                # If PDF fails, we still want the transfer approved and asset moved?
+                # Usually yes.
+                pass
                 
         else:
             transfer.status = TransferStatus.REJECTED

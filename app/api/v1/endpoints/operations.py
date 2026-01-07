@@ -72,7 +72,7 @@ def create_transfer(
     Create new transfer request(s). Only Logisticians can initiate.
     Supports bulk creation via `assetIds` list.
     """
-    return OperationService.create_transfer(session, transfer_in, current_user.role, current_user.user_id)
+    return OperationService.create_transfer(session, transfer_in, current_user.roles, current_user.user_id)
 
 @router.get("/transfers/", response_model=List[TransferRead])
 def read_transfers(
@@ -99,7 +99,7 @@ def update_transfer_status(
     When approved, returns the generated PDF document.
     """
     approved = status_update.status == "APPROVED"
-    result = OperationService.approve_transfer(session, transfer_id, approved, current_user.role)
+    result = OperationService.approve_transfer(session, transfer_id, approved, current_user.roles, current_user.full_name)
     
     # If approved and PDF was generated, return the file
     if approved and isinstance(result, dict) and "pdf_path" in result:
@@ -167,9 +167,14 @@ def get_good_issue_note(
         to_loc = l2.location_name if l2 else "Unknown Loc"
     
     # Generate PDF in temp location
+    # Use fallback values for re-download since approver info is not stored
+    approver_name = "Supply Chain Manager"
+    approval_date = transfer.requested_at
+    
     pdf_path = PDFService.generate_transfer_pdf(
         transfer, asset, initiator_name,
-        from_name, to_name, from_loc, to_loc
+        from_name, to_name, from_loc, to_loc,
+        approver_name, approval_date
     )
     
     if not os.path.exists(pdf_path):
@@ -209,11 +214,36 @@ def get_asset_holder_form(
         select(Asset).where(Asset.custodian_id == user_id)
     ).all()
     
+    # Prepare asset data with attribution date
+    asset_data = []
+    
+    # Pre-fetch transfers to optimize (though loop is fine for reasonable N)
+    # For each asset, find the latest approved transfer to this user
+    for asset in assets:
+        # Find the most recent approved transfer of this asset to this user
+        # We order by requested_at desc to get the latest
+        transfer = session.exec(
+            select(Transfer)
+            .where(Transfer.asset_id == asset.scom_asset_id)
+            .where(Transfer.to_user_id == user_id)
+            .where(Transfer.status == "APPROVED")
+            .order_by(Transfer.requested_at.desc())
+            .limit(1)
+        ).first()
+        
+        attr_date = transfer.requested_at if transfer else None
+        
+        asset_data.append({
+            "asset": asset,
+            "attribution_date": attr_date
+        })
+    
     # Generate PDF
     pdf_path = PDFService.generate_asset_holder_form(
         user_name=user.full_name,
         user_id=user.user_id,
-        assets=list(assets)
+        assets_data=asset_data,
+        generator_name=current_user.full_name
     )
     
     if not os.path.exists(pdf_path):

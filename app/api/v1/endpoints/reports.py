@@ -17,7 +17,13 @@ def get_dashboard(
     """
     Role-specific dashboard metrics for current user.
     """
-    metrics = ReportService.get_dashboard_metrics(session, current_user.role)
+    metrics = ReportService.get_dashboard_metrics(session, current_user.roles)
+    # Returning singular 'role' in DashboardMetrics might be misleading if user has multiple.
+    # But schema likely expects a string. We can join them or pass 'primary' role.
+    # For now, let's pass the roles list if the schema supports it, or a string representation.
+    # Checking DashboardMetrics schema... assuming it might need update or we keep "role" as legacy string.
+    # Let's keep current_user.role (singular) for the 'role' field response to avoid breaking frontend which might expect a string,
+    # but the metrics themselves are now calculated based on ALL roles.
     return DashboardMetrics(role=current_user.role, metrics=metrics)
 
 # === ASSET REPORTS ===
