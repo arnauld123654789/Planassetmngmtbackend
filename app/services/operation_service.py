@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.master_data import Location
 from app.schemas.operations import DisposalCreate, TransferCreate
 from app.core.config import settings
+from app.core.rbac import RoleChecker
 
 class OperationService:
     @staticmethod
@@ -72,14 +73,9 @@ class OperationService:
         return disposal
 
     def create_transfer(session: Session, transfer_in: TransferCreate, user_roles: List[str], user_id: str) -> List[Transfer]:
-        # Check if user has Logistician role (or IT Admin who can do everything? - user requirement imply cumulate privileges)
-        # But strictly, requirement says "Only Logisticians can initiate" in docstring. 
-        # However "cumulate privileges" means if I am Logistician AND Manager, I can initiate.
-        
-        # Check if 'Logistician' is in the list of roles
-        is_logistician = any(UserRole.LOGISTICIAN.value == role or UserRole.LOGISTICIAN.value in str(role) for role in user_roles)
-        
-        if not is_logistician:
+        # Use centralized RoleChecker for multi-role support
+        # Only Logisticians can initiate transfers (or admins who can do everything)
+        if not RoleChecker.has_role(user_roles, UserRole.LOGISTICIAN):
             raise HTTPException(status_code=403, detail="Only Logisticians can initiate transfers")
             
         created_transfers = []
@@ -106,15 +102,10 @@ class OperationService:
 
     @staticmethod
     def approve_transfer(session: Session, transfer_id: str, approved: bool, user_roles: List[str], approver_name: str):
-        # Check if user has SCM or IT Admin role
-        can_approve = any(
-            role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value] or 
-            any(allowed in str(role) for allowed in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value])
-            for role in user_roles
-        )
-
-        if not can_approve:
-             raise HTTPException(status_code=403, detail="Only Supply Chain Managers or IT Admins can approve transfers")
+        # Use centralized RoleChecker for multi-role support
+        # Only Supply Chain Managers or IT Admins can approve transfers
+        if not RoleChecker.has_any_role(user_roles, [UserRole.SUPPLY_CHAIN_MANAGER, UserRole.IT_ADMIN]):
+            raise HTTPException(status_code=403, detail="Only Supply Chain Managers or IT Admins can approve transfers")
 
         transfer = session.get(Transfer, transfer_id)
         if not transfer:

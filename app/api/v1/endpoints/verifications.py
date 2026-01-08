@@ -13,6 +13,7 @@ from app.models.verification import (
 from app.models.asset import Asset
 from app.models.user import User
 from app.models.enums import UserRole
+from app.core.rbac import RoleChecker
 from app.schemas.verification import (
     VerificationSessionCreate, 
     VerificationSessionRead,
@@ -35,7 +36,8 @@ def create_session(
     """
     Create a new physical verification session. (Supply Chain Manager and IT Admin only)
     """
-    if not any(role in current_user.roles for role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value]):
+    # Use centralized RoleChecker for multi-role support
+    if not RoleChecker.can_manage(current_user.roles):
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     db_session = VerificationSession.model_validate(
@@ -66,7 +68,8 @@ def update_session_status(
     db_session = session.get(VerificationSession, id)
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if not any(role in current_user.roles for role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value]):
+    # Use centralized RoleChecker for multi-role support
+    if not RoleChecker.can_manage(current_user.roles):
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     db_session.status = status
@@ -89,7 +92,8 @@ def assign_verificators(
     db_session = session.get(VerificationSession, id)
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if not any(role in current_user.roles for role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value]):
+    # Use centralized RoleChecker for multi-role support
+    if not RoleChecker.can_manage(current_user.roles):
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     for user_id in assignment_in.user_ids:
@@ -152,11 +156,19 @@ def record_asset_verification(
             )
         ).first()
         
-        if not assignment and not any(role in current_user.roles for role in [UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value]):
+        # Use centralized RoleChecker for multi-role support
+        if not assignment and not RoleChecker.can_manage(current_user.roles):
             raise HTTPException(status_code=403, detail="User not assigned to this session")
     else:
         # Regular scan check - Logisticians or Verificators can scan anytime
-        if not any(role in current_user.roles for role in [UserRole.LOGISTICIAN.value, UserRole.VERIFICATOR.value, UserRole.SUPPLY_CHAIN_MANAGER.value, UserRole.IT_ADMIN.value]):
+        # Use centralized RoleChecker for multi-role support
+        allowed_roles = [
+            UserRole.LOGISTICIAN,
+            UserRole.VERIFICATOR,
+            UserRole.SUPPLY_CHAIN_MANAGER,
+            UserRole.IT_ADMIN
+        ]
+        if not RoleChecker.has_any_role(current_user.roles, allowed_roles):
             raise HTTPException(status_code=403, detail="Regular scans allowed for Logisticians and Verificators only")
 
     # Create verification record

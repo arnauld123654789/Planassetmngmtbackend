@@ -5,6 +5,8 @@ from sqlmodel import select
 from app.core import security
 from app.api.deps import SessionDep, CurrentUser
 from app.models.user import User
+from app.models.enums import UserRole
+from app.core.rbac import RoleChecker
 from app.schemas.user import UserCreate, UserUpdate
 
 router = APIRouter()
@@ -19,8 +21,8 @@ def read_users(
     """
     Retrieve users.
     """
-    # Simple RBAC check example
-    # if current_user.role != "IT Admin": raise HTTPException...
+    # Note: All authenticated users can view the user list
+    # Add role-based filtering here if needed using RoleChecker
     users = session.exec(select(User).offset(skip).limit(limit)).all()
     return users
 
@@ -95,11 +97,8 @@ def update_user(
         raise HTTPException(status_code=404, detail="User not found")
         
     # Permission check: Only IT Admin or the user themselves can update
-    from app.models.enums import UserRole
-    is_admin = any(
-        UserRole.IT_ADMIN.value == role or UserRole.IT_ADMIN.value in str(role)
-        for role in current_user.roles
-    )
+    # Use centralized RoleChecker for multi-role support
+    is_admin = RoleChecker.is_admin(current_user.roles)
     is_self = current_user.user_id == user.user_id
     
     if not is_admin and not is_self:
@@ -136,14 +135,9 @@ def delete_user(
     user_id: str,
     current_user: CurrentUser,
 ) -> Any:
-    from app.models.enums import UserRole
-    
     # Permission: Only IT Admin
-    is_admin = any(
-        UserRole.IT_ADMIN.value == role or UserRole.IT_ADMIN.value in str(role)
-        for role in current_user.roles
-    )
-    if not is_admin:
+    # Use centralized RoleChecker for multi-role support
+    if not RoleChecker.is_admin(current_user.roles):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     user = session.get(User, user_id)

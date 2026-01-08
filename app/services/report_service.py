@@ -6,6 +6,8 @@ from app.models.operations import Transfer, Disposal, Maintenance
 from app.models.verification import VerificationSession, AssetVerification
 from app.models.master_data import Location, AssetCategory
 from app.models.user import User
+from app.models.enums import UserRole
+from app.core.rbac import RoleChecker
 from app.schemas.reports import *
 
 class ReportService:
@@ -16,15 +18,12 @@ class ReportService:
         """Role-specific dashboard metrics"""
         metrics = {}
         
-        # Check privileges based on presence of roles in the list
-        is_scm = any("Supply Chain Manager" in r for r in roles) if roles else False
-        is_admin = any("IT Admin" in r for r in roles) if roles else False
+        # Use centralized RoleChecker for consistent multi-role support
+        is_scm = RoleChecker.has_role(roles, UserRole.SUPPLY_CHAIN_MANAGER)
+        is_admin = RoleChecker.has_role(roles, UserRole.IT_ADMIN)
         
-        # Simple check: If exact match logic is preferred:
-        # is_scm = "Supply Chain Manager" in roles
-        # is_admin = "IT Admin" in roles
-        # Use loose check to handle potential string variations if needed, but strict list check is safer if Enum used consistently.
-        # Given "Array(4) ['IT Admin', ...]" log, strict check is likely fine, but let's be robust.
+        # Or use convenience method:
+        # has_manager_access = RoleChecker.can_manage(roles)
         
         has_manager_access = is_scm or is_admin
         
