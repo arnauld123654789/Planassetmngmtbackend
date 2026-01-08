@@ -46,7 +46,11 @@ def create_session(
     session.add(db_session)
     session.commit()
     session.refresh(db_session)
-    return db_session
+    
+    # Return with empty assignments for a new session
+    result = VerificationSessionRead.model_validate(db_session)
+    result.assigned_user_ids = []
+    return result
 
 @router.get("/sessions", response_model=List[VerificationSessionRead])
 def read_sessions(
@@ -55,7 +59,15 @@ def read_sessions(
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    return session.exec(select(VerificationSession).offset(skip).limit(limit)).all()
+    db_sessions = session.exec(select(VerificationSession).offset(skip).limit(limit)).all()
+    
+    results = []
+    for s in db_sessions:
+        read_s = VerificationSessionRead.model_validate(s)
+        read_s.assigned_user_ids = [a.user_id for a in s.assignments]
+        results.append(read_s)
+        
+    return results
 
 @router.patch("/sessions/{id}/status", response_model=VerificationSessionRead)
 def update_session_status(
@@ -76,7 +88,10 @@ def update_session_status(
     session.add(db_session)
     session.commit()
     session.refresh(db_session)
-    return db_session
+    
+    result = VerificationSessionRead.model_validate(db_session)
+    result.assigned_user_ids = [a.user_id for a in db_session.assignments]
+    return result
 
 @router.post("/sessions/{id}/verificators")
 def assign_verificators(
@@ -102,6 +117,17 @@ def assign_verificators(
         if not user:
             continue
             
+        # --- Intelligent Role Handling ---
+        # If user is assigned to a session, ensure they have the 'Verificator' role
+        if not RoleChecker.has_role(user.roles, UserRole.VERIFICATOR):
+            # Check if UserRole.VERIFICATOR.value is already in the list to avoid duplicates
+            if UserRole.VERIFICATOR.value not in user.roles:
+                user.roles.append(UserRole.VERIFICATOR.value)
+                # Update the legacy 'role' field as well if it was single-role
+                if not user.role:
+                    user.role = UserRole.VERIFICATOR.value
+                session.add(user)
+
         # Check if already assigned
         existing = session.exec(
             select(VerificationAssignment).where(

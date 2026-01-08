@@ -17,6 +17,8 @@ class VerificationSessionRead(VerificationSessionBase):
     id: int
     created_by_id: str
     created_at: datetime
+    # List of assigned user IDs
+    assigned_user_ids: List[str] = []
 
 class AssetVerificationBase(SQLModel):
     asset_id: str
