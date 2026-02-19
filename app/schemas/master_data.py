@@ -1,6 +1,18 @@
 from typing import Optional
 from app.models.base import CamelModel
 
+# Site
+class SiteBase(CamelModel):
+    site_code: str = None
+    site_name: str = None
+
+class SiteCreate(SiteBase):
+    site_code: str
+    site_name: str
+
+class SiteUpdate(SiteBase):
+    pass
+
 # Asset Category
 class AssetCategoryBase(CamelModel):
     name: str = None
@@ -29,14 +41,14 @@ class AssetSubCategoryUpdate(AssetSubCategoryBase):
 
 # Location
 class LocationBase(CamelModel):
-    location_code: str = None
     location_name: str = None
-    site_name: str = None
+    location_name_code: str = None
+    site_id: str = None
 
 class LocationCreate(LocationBase):
-    location_code: str
     location_name: str
-    site_name: str
+    location_name_code: str
+    site_id: str
 
 class LocationUpdate(LocationBase):
     pass

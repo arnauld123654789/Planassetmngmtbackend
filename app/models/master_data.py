@@ -1,6 +1,11 @@
 from typing import Optional
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 from app.models.base import CamelModel
+
+class Site(CamelModel, table=True):
+    site_id: str = Field(primary_key=True, alias="siteId")
+    site_code: str = Field(unique=True, alias="siteCode")
+    site_name: str = Field(alias="siteName")
 
 class LegalEntity(CamelModel, table=True):
     legal_entity_id: str = Field(primary_key=True, alias="legalEntityId")
@@ -21,9 +26,10 @@ class AssetSubCategory(CamelModel, table=True):
 
 class Location(CamelModel, table=True):
     location_id: str = Field(primary_key=True, alias="locationId")
-    location_code: str = Field(alias="locationCode")
+    location_code: str = Field(unique=True, alias="locationCode")  # Auto-generated: site_code + location_name_code
     location_name: str = Field(alias="locationName")
-    site_name: str = Field(alias="siteName")
+    location_name_code: str = Field(alias="locationNameCode")  # User-provided identifier for this location
+    site_id: str = Field(foreign_key="site.site_id", alias="siteId")
 
 class Project(CamelModel, table=True):
     project_id: str = Field(primary_key=True, alias="projectId")

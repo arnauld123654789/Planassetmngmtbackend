@@ -8,53 +8,112 @@ import json
 
 from app.api.deps import SessionDep, CurrentUser
 from app.models.asset import Asset
-from app.schemas.asset import AssetCreate, AssetUpdate, AssetRead
+from app.schemas.asset import AssetCreate, AssetUpdate, AssetRead, AssetDetailedRead, LocationInfo, SiteInfo
 from app.services.asset_service import AssetService
 from app.services.photo_service import PhotoService
-from app.models.master_data import AssetSubCategory
+from app.models.master_data import AssetSubCategory, Location, Site
 
 router = APIRouter()
 
-@router.get("/", response_model=List[AssetRead])
+@router.get("/", response_model=List[AssetDetailedRead])
 def read_assets(
     session: SessionDep,
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
+    """Get all assets with location and site information"""
     assets = session.exec(select(Asset).options(selectinload(Asset.photos)).offset(skip).limit(limit)).all()
     
     results = []
     for asset in assets:
-        # Create AssetRead from asset data
-        asset_read = AssetRead.model_validate(asset)
+        # Create AssetDetailedRead from asset data
+        asset_detailed = AssetDetailedRead.model_validate(asset)
         
         # Populate photo info
-        asset_read.photo_count = len(asset.photos)
+        asset_detailed.photo_count = len(asset.photos)
         
         if asset.photos:
             # Try to find profile photo, otherwise use the first one
             profile_photo = next((p for p in asset.photos if p.is_profile), asset.photos[0])
             
-            # Construct URL - assuming /static/ mount
-            # Note: In a real app, might want to store full URL or have a helper
-            asset_read.profile_photo_url = f"/static/{profile_photo.filename}"
-            asset_read.profile_photo_thumb_url = f"/static/{profile_photo.filename}" # Using same for now as requested
+            # Construct URL
+            asset_detailed.profile_photo_url = f"/static/{profile_photo.filename}"
+            asset_detailed.profile_photo_thumb_url = f"/static/{profile_photo.filename}"
+        
+        # Load location and site information
+        if asset.location_id:
+            location = session.get(Location, asset.location_id)
+            if location:
+                location_info = LocationInfo(
+                    location_id=location.location_id,
+                    location_code=location.location_code,
+                    location_name=location.location_name,
+                    location_name_code=location.location_name_code
+                )
+                
+                # Load site information
+                if location.site_id:
+                    site = session.get(Site, location.site_id)
+                    if site:
+                        location_info.site = SiteInfo(
+                            site_id=site.site_id,
+                            site_code=site.site_code,
+                            site_name=site.site_name
+                        )
+                
+                asset_detailed.location = location_info
             
-        results.append(asset_read)
+        results.append(asset_detailed)
         
     return results
 
-@router.get("/{asset_id}", response_model=Asset)
+@router.get("/{asset_id}", response_model=AssetDetailedRead)
 def read_asset(
     asset_id: str,
     session: SessionDep,
     current_user: CurrentUser,
 ) -> Any:
+    """Get detailed asset information including location and site"""
     asset = session.get(Asset, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    return asset
+    
+    # Create the detailed response
+    asset_detailed = AssetDetailedRead.model_validate(asset)
+    
+    # Load location and site information
+    if asset.location_id:
+        location = session.get(Location, asset.location_id)
+        if location:
+            location_info = LocationInfo(
+                location_id=location.location_id,
+                location_code=location.location_code,
+                location_name=location.location_name,
+                location_name_code=location.location_name_code
+            )
+            
+            # Load site information
+            if location.site_id:
+                site = session.get(Site, location.site_id)
+                if site:
+                    location_info.site = SiteInfo(
+                        site_id=site.site_id,
+                        site_code=site.site_code,
+                        site_name=site.site_name
+                    )
+            
+            asset_detailed.location = location_info
+    
+    # Load photo information
+    photos = session.exec(select(Asset).where(Asset.scom_asset_id == asset_id).options(selectinload(Asset.photos))).first()
+    if photos and photos.photos:
+        asset_detailed.photo_count = len(photos.photos)
+        profile_photo = next((p for p in photos.photos if p.is_profile), photos.photos[0])
+        asset_detailed.profile_photo_url = f"/static/{profile_photo.filename}"
+        asset_detailed.profile_photo_thumb_url = f"/static/{profile_photo.filename}"
+    
+    return asset_detailed
 
 @router.post("/", response_model=Asset)
 def create_asset(

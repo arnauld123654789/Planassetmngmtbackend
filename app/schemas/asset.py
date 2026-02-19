@@ -3,6 +3,7 @@ from datetime import date
 from pydantic import Field
 from app.models.asset import AssetBase
 from app.models.enums import AssetStatus
+from app.models.base import CamelModel
 
 class AssetCreate(AssetBase):
     pass
@@ -40,3 +41,24 @@ class AssetRead(AssetBase):
     photo_count: int = 0
     profile_photo_url: Optional[str] = None
     profile_photo_thumb_url: Optional[str] = None
+
+# Nested models for detailed asset response
+class SiteInfo(CamelModel):
+    site_id: str = Field(alias="siteId")
+    site_code: str = Field(alias="siteCode")
+    site_name: str = Field(alias="siteName")
+
+class LocationInfo(CamelModel):
+    location_id: str = Field(alias="locationId")
+    location_code: str = Field(alias="locationCode")
+    location_name: str = Field(alias="locationName")
+    location_name_code: str = Field(alias="locationNameCode")
+    site: Optional[SiteInfo] = None
+
+class AssetDetailedRead(AssetBase):
+    """Extended asset response with location and site information"""
+    scom_asset_id: str = Field(alias="SCOMAssetID")
+    photo_count: int = 0
+    profile_photo_url: Optional[str] = None
+    profile_photo_thumb_url: Optional[str] = None
+    location: Optional[LocationInfo] = None
